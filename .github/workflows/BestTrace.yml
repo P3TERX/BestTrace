@@ -1,0 +1,31 @@
+name: Upload BestTrace
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 1 */10 * *
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Download BestTrace
+      run: |
+        wget -nv https://cdn.ipip.net/17mon/besttrace4linux.zip
+        unzip besttrace4linux.zip -d upload
+        echo "DATE_TIME=$(stat upload/besttrace | grep Modify | cut -d' ' -f2)" >> $GITHUB_ENV
+
+    - name: Push to 'download' branch
+      run: |
+        cd upload
+        git init
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        git checkout -b download
+        git add .
+        git commit -m "${{ env.DATE_TIME }}"
+        git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        git push -f origin download
